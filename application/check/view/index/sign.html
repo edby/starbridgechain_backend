@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<title>签名验签工具</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+	<style type="text/css">
+		.pl{margin-left: 5px;}
+	</style>
+</head>
+<body>
+<div class="container container-desktop">
+    <div class="page-header">
+      <h4>交易市场&管理后台接口签名校验工具</h4>
+    </div>
+
+    <p>
+      <b>签名生成规则如下：</b>
+    </p>
+    <ul>
+      <li>
+        参与签名的字段所对应的平台详见APIZZ文档https://apizza.net/console/project/0080e1d2b138abbbb70c2a05cca86710/dev。
+      </li>
+
+      <li>
+        对所有待签名参数按照字段名的 ASCII 码<b>从小到大</b>排序（字典序）后，使用 URL 键值对的格式（即key1=value1&amp;key2=value2…）拼接成字符串 string 。这里需要注意的是所有参数名均为<b>小写字符</b>。
+      </li>
+      <li>
+        如果参数的值为空不参与签名
+      </li>
+      <li>
+        接下来对 string 作 md5 加密，字段名和字段值都采用原始值，<b>不进行 URL 转义</b>。即 signature=sha1(string1)。
+      </li>
+    </ul>
+
+    <br>
+    <form class="form-horizontal" id="jsapiSignForm">
+
+    <div class="form-group">
+        <label for="jsapi_ticket" class="col-lg-2 control-label">平台</label>
+        <div class="col-lg-6">
+        	<select class="form-control" id="portfrom" name="type">
+        		<option value="2">WEB/后台 Api 接口</option>
+        		<option value="1">APP Rest 接口</option>
+        		
+        	</select>
+        </div>
+        <b id="jsapi_ticket_msg" class="text-danger"></b>
+     </div>
+
+    <div class="form-group">
+        <label for="jsapi_ticket" class="col-lg-2 control-label">token</label>
+        <div class="col-lg-6">
+          <input type="text" class="form-control" name="token" id="jsapi_ticket" placeholder="通过 Login 接口获取的 API 调用凭证" required="">
+        </div>
+        <b id="jsapi_ticket_msg" class="text-danger"></b>
+    </div>
+
+    <div class="form-group">
+        <label for="noncestr" class="col-lg-2 control-label">noncestr</label>
+        <div class="col-lg-6">
+          <input type="text" class="form-control" name="noncestr" id="noncestr" placeholder="随机生成的字符串（建议数字+字母大小写）" required="">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="timestamp" class="col-lg-2 control-label">timestamp</label>
+        <div class="col-lg-6">
+          <input type="text" class="form-control" name="timestamp" id="timestamp" placeholder="当前时间戳（单位：秒）" required="">
+        </div>
+    </div>
+
+    <div class="yecs">
+    	<div class="form-group" id="param-idx-0">
+	        <label for="timestamp" class="col-lg-2 control-label">业务参数1</label>
+	        <div class="col-lg-6">
+		        <div class="form-inline">
+		    		<input type="text" style="" class="form-control" name="param[0][key]"  placeholder="Key" required="">
+		    		<input type="text" style="" class="form-control pl" name="param[0][val]" placeholder="Value" required="">
+		    		<a class="btn btn-default btn-del" data-idx=0 style="float: right;" href="javascript:" role="button">删</a>
+		    	</div>
+	        </div>
+	     </div>
+
+	     
+    </div>
+
+     
+      <div class="form-group">
+        <div class="col-lg-offset-2 col-lg-6">
+        	<button class="btn btn-primary yecsBtn" type="button" id="addyc">添加业务参数</button>
+          <button class="btn btn-primary" type="submit">生成签名</button>
+        </div>
+      </div>
+
+
+      <div class="signResult">
+        <hr>
+        <div class="form-group">
+          <label for="url" class="col-lg-2 control-label">String</label>
+          <div class="col-lg-10">
+            <p class="text-danger" style="margin-top: 7px;" id="string"></p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="url" class="col-lg-2 control-label">Signature</label>
+          <div class="col-lg-6">
+            <p class="text-danger" style="margin-top: 7px;" id="signature"></p>
+          </div>
+        </div>
+      </div>
+
+    </form>
+
+  </div>
+  <script type="text/javascript" src="https://mp.weixin.qq.com/debug/zh_CN/htmledition/js/lib/jquery-1.9.11f5859.js"></script>
+  <script type="text/javascript">
+  	$('#portfrom').on('change',function(){
+  		var val = $(this).val();
+  		if(val == 2){
+  			$('.yecs').css('display','block')
+  			$('.yecsBtn').css('display','inline-block')
+  			
+  		}else{
+  			$('.yecs').css('display','none')
+  			$('.yecsBtn').css('display','none')
+  		}
+  	})
+
+  	$("form").submit(function(e){
+	    e.preventDefault();   // disabled default action
+	  
+
+	    $.post("{:url('tool/send/sign')}",$("form").serialize(),function(res){
+	    	res = JSON.parse(res)
+	    	$('#string').text(res.data.str);
+	    	$('#signature').text(res.data.sign);
+  		})
+	    
+	  });
+
+  	$('#addyc').on('click',function(){
+  		var length = $('.yecs').find('.form-group').length;
+  		length = length+1;
+  		var str = '<div class="form-group" id="param-idx-'+length+'">'
+  			str+= '<label for="timestamp" class="col-lg-2 control-label">业务参数'+length+'</label>'
+  			str+= '<div class="col-lg-6">'
+  			str+= '<div class="form-inline">'
+  			str+= '<input type="text" style="" class="form-control" name="param['+length+'][key]" placeholder="Key" required="">'
+  			str+= '<input type="text" style="" class="form-control pl" name="param['+length+'][val]" placeholder="Value" required="">'
+  			str+= '<a class="btn btn-default btn-del" data-idx='+length+' style="float: right;" href="javascript:" role="button">删</a>'
+  			str+= '</div>'
+  			str+= '</div>'
+  			str+= '</div>';
+
+  		$('.yecs').append(str);
+  	})
+
+  	$('body').delegate('.btn-del','click',function(){
+  		var idx = $(this).attr('data-idx');
+  		$('#param-idx-'+idx).remove();
+  	})
+
+  </script>
+</body>
+</html>
